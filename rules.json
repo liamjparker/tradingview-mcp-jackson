@@ -1,65 +1,142 @@
 {
-  "watchlist": ["BTCUSDT"],
-  "default_timeframe": "1",
+  "watchlist": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA"],
 
-  "strategy": {
-    "name": "10-Second Momentum Scalper",
-    "sources": [
-      "Price momentum — buy if last close > previous close (green candle)",
-      "RSI filter — only trade when RSI is not at an extreme (30–70 range)"
-    ],
-    "primary_timeframes": [
-      "1-minute (signal source)",
-      "10-second execution loop"
-    ]
-  },
+  "default_timeframe": "W",
 
   "indicators": {
-    "rsi_14": "Momentum filter. Only trade when RSI is between 30–70 (avoid extremes).",
-    "price_momentum": "Compare last close vs previous close. Up = long signal. Down = short signal."
+    "available": [
+      {
+        "name": "THT Volume Pro",
+        "location": "Main chart (volume bars on right side)",
+        "entity_id_hint": "tYFOXH",
+        "always_on": true
+      },
+      {
+        "name": "THT Multi Timeframe BX",
+        "location": "Pane below main chart (oscillator histogram)",
+        "entity_id_hint": "H1r9qa",
+        "always_on": true
+      },
+      {
+        "name": "Bull Market Support Band",
+        "description": "Bitcoin-origin indicator — 20-week SMA + 21-week EMA. Works on all charts. Shows key dynamic support/resistance.",
+        "location": "Main chart (two lines overlaid on price)",
+        "always_on": false
+      }
+    ],
+    "free_plan_limit": 2,
+    "IMPORTANT": "Free TradingView plan allows maximum 2 indicators visible at once — this is a HARD CAP that applies to EVERY indicator, not just specific ones. CRITICAL UNIVERSAL RULE: Before toggling ON any new indicator, you MUST first toggle OFF one of the currently visible ones. Always maintain the invariant: visible_count <= 2 at every single step. Never have 3 visible even momentarily — TradingView silently fails to load the new one if you try. The pattern is always: DROP one → ADD one → READ → (if more to read) DROP one → ADD next → READ → ... → finally restore original state.",
+    "universal_toggle_rule": {
+      "principle": "visible_indicator_count <= 2 must hold at every step. Always drop before adding. This applies to ALL indicators on ALL charts — not just BMSB.",
+      "general_pattern": [
+        "Maintain a mental model of which 2 indicators are currently visible",
+        "To READ a new indicator: DROP one of the visible 2 → ADD the target → READ → DROP the target → ADD back what you dropped",
+        "To READ multiple new indicators in sequence: keep ONE primary fixed (the anchor), and rotate the second slot through each indicator you want to read",
+        "Always end by restoring the original 2-indicator default state (Volume Pro + BX Trender)"
+      ]
+    },
+    "workflow_single_extra_indicator": [
+      "Goal: Read 1 extra indicator (e.g. BMSB) while preserving Volume Pro + BX defaults",
+      "1. chart_get_state — confirm Volume Pro (tYFOXH) + BX (H1r9qa) are visible",
+      "2. Toggle OFF Volume Pro (tYFOXH) → 1 visible",
+      "3. Toggle ON BMSB (MJCd4h) → 2 visible (BX + BMSB)",
+      "4. Read data (data_get_study_values, etc.)",
+      "5. Toggle OFF BMSB (MJCd4h) → 1 visible",
+      "6. Toggle ON Volume Pro (tYFOXH) → 2 visible (default state restored)"
+    ],
+    "workflow_multiple_extra_indicators_carousel": [
+      "Goal: Read N extra indicators in sequence (e.g. BMSB, then 200w SMA, then RSI, etc.) while preserving an anchor indicator",
+      "Strategy: Pick ONE anchor to keep visible the entire time (usually BX H1r9qa, since it's in a separate pane and never conflicts with main-chart overlays). Rotate the SECOND slot through each indicator you want to read.",
+      "1. chart_get_state — confirm starting state (e.g. Volume Pro + BX visible)",
+      "2. Toggle OFF Volume Pro (tYFOXH) → 1 visible (anchor: BX)",
+      "3. Toggle ON Indicator #1 (e.g. BMSB MJCd4h) → 2 visible (BX + BMSB)",
+      "4. Read Indicator #1 data",
+      "5. Toggle OFF Indicator #1 (BMSB) → 1 visible (anchor: BX)",
+      "6. Toggle ON Indicator #2 (e.g. 200w SMA) → 2 visible (BX + 200w SMA)",
+      "7. Read Indicator #2 data",
+      "8. Toggle OFF Indicator #2 → 1 visible (anchor: BX)",
+      "9. Toggle ON Indicator #3 → 2 visible — read — toggle OFF → 1 visible",
+      "10. Repeat steps 6–9 for each additional indicator you need to read",
+      "11. After last indicator: with only the anchor (BX) visible, toggle ON the original Volume Pro (tYFOXH) → restored to default 2-indicator state"
+    ],
+    "carousel_example_AAPL_3_extras": [
+      "Reading BMSB + 200w SMA + RSI on AAPL while keeping BX as the anchor:",
+      "Start: Volume Pro + BX (2 visible) — DEFAULT",
+      "Step 1: Toggle OFF Volume Pro → BX only (1)",
+      "Step 2: Toggle ON BMSB → BX + BMSB (2) → READ BMSB",
+      "Step 3: Toggle OFF BMSB → BX only (1)",
+      "Step 4: Toggle ON 200w SMA → BX + 200w SMA (2) → READ 200w SMA",
+      "Step 5: Toggle OFF 200w SMA → BX only (1)",
+      "Step 6: Toggle ON RSI → BX + RSI (2) → READ RSI",
+      "Step 7: Toggle OFF RSI → BX only (1)",
+      "Step 8: Toggle ON Volume Pro → Volume Pro + BX (2) — RESTORED"
+    ],
+    "anchor_selection_guidance": [
+      "When reading multiple extras, pick an anchor that doesn't conflict with what you're reading.",
+      "BX Trender (H1r9qa) is usually the best anchor — it's in a sub-pane below the main chart, so it never interferes visually or technically with main-chart overlays (BMSB, SMAs, EMAs, Bollinger Bands, etc.)",
+      "Volume Pro (tYFOXH) is a good anchor only if all the indicators you want to read are sub-pane oscillators (RSI, MACD, etc.) — but never alongside another main-chart overlay",
+      "If you need to read both a sub-pane oscillator AND a main-chart overlay, you may need to swap the anchor mid-carousel (still following the drop-then-add rule)"
+    ],
+    "toggle_workflow_DO_NOT": [
+      "DO NOT toggle ON any indicator while 2 are already visible — it will silently fail to load",
+      "DO NOT try to do toggle ON + toggle OFF in parallel — they must always be sequential, in the right order (OFF first, then ON)",
+      "DO NOT skip the final 'restore default state' step at the end of any read sequence",
+      "DO NOT assume the indicator loaded successfully — always verify with chart_get_state or data_get_study_values after toggling ON",
+      "DO NOT batch-toggle multiple indicators in a single round trip without confirming each one loaded",
+      "DO NOT cache visibility state across reads — always re-check chart_get_state at the start of any new toggle workflow"
+    ]
   },
 
   "bias_criteria": {
     "bullish": [
-      "Last 1-min candle closed higher than the one before it",
-      "RSI is between 30 and 70"
+      "VOLUME PROFILE: Price is backtesting a thick volume block or the Point of Control (POC) from above — this is a potential support/bounce zone. Also note any thick volume blocks ABOVE current price as resistance targets.",
+      "VOLUME PROFILE: Price has broken above a key thick volume block or POC — bullish breakout signal. Identify the next resistance block above.",
+      "BX TRENDER: Monthly BX has shifted from dark red to light red (momentum beginning to return) OR is currently green (full bullish cycle). The THT Multi Timeframe BX always shows the MONTHLY value regardless of chart timeframe.",
+      "BULL MARKET SUPPORT BAND: Price is above or bouncing off the 20-week SMA / 21-week EMA band — confirms macro bullish structure."
     ],
     "bearish": [
-      "Last 1-min candle closed lower than the one before it",
-      "RSI is between 30 and 70"
+      "PRICE ACTION: Price is trading well below the Bull Market Support Band (20-week SMA + 21-week EMA) — macro bearish structure, bull cycle likely over.",
+      "BX TRENDER: Monthly BX is dark red — indicates the bull cycle has ended and momentum has not yet returned to this name. No long setups until BX shifts.",
+      "VOLUME PROFILE: Price is below the POC and being rejected by thick volume zones above — overhead resistance is dominant."
     ],
     "neutral": [
-      "RSI is above 70 (overbought — skip)",
-      "RSI is below 30 (oversold — skip)",
-      "Candle close change is less than 0.05% (chop — skip)"
+      "BX TRENDER: Monthly BX is light red but has not yet shifted — momentum is slowing but no confirmed reversal yet.",
+      "VOLUME PROFILE: Price is chopping inside a thick volume zone with no clear breakout or breakdown.",
+      "BULL MARKET SUPPORT BAND: Price is testing the band but has not clearly bounced or broken through."
     ]
   },
 
-  "entry_rules": {
-    "long": [
-      "Last close > previous close by at least 0.05%",
-      "RSI between 30 and 70",
-      "Enter market buy immediately"
-    ],
-    "short": [
-      "Last close < previous close by at least 0.05%",
-      "RSI between 30 and 70",
-      "Enter market sell immediately"
-    ]
+  "indicator_reading_guide": {
+    "THT_Multi_Timeframe_BX": {
+      "what_it_shows": "Monthly BX Trender value — always monthly regardless of chart timeframe",
+      "how_to_read": "Positive value = green (bullish). Negative value = red. Key distinction: dark red (very negative, bear cycle dominant) vs light red (less negative, momentum starting to return). The shift from dark red to light red is the key bullish trigger.",
+      "mcp_field": "B-Xtrender Osc. - Histogram",
+      "bullish_signal": "Value turning from deeply negative toward zero (dark red → light red), or positive (green)",
+      "bearish_signal": "Value deeply negative and not recovering (dark red)"
+    },
+    "THT_Volume_Pro": {
+      "what_it_shows": "Weekly volume profile — horizontal volume bars showing where most trading has occurred",
+      "how_to_read": "Thicker bars = more historical volume = stronger support/resistance. POC (Point of Control) = thickest bar = most significant level. Read via data_get_pine_boxes — lower x1 value = thicker bar = more volume.",
+      "bullish_signal": "Price testing POC or thick zone from above (potential support/bounce)",
+      "bearish_signal": "Price below POC, rejected by thick zones above"
+    },
+    "Bull_Market_Support_Band": {
+      "what_it_shows": "20-week SMA + 21-week EMA overlaid on price chart",
+      "how_to_read": "Price above both lines = bull structure intact. Price below both lines = bear market territory. Originally a Bitcoin indicator but applies to all assets.",
+      "note": "Toggle workflow required to view — must temporarily hide BX Trender or Volume Pro first"
+    }
   },
 
-  "exit_rules": [
-    "Exit automatically after 10 seconds (next loop tick closes previous position)",
-    "No manual exit management — pure time-based scalp"
-  ],
+  "timeframe_notes": {
+    "primary_chart": "Weekly (1W) — always use weekly for all analysis",
+    "bx_trender": "Always reads MONTHLY BX value — the THT Multi Timeframe BX shows monthly data regardless of chart timeframe set",
+    "volume_profile": "Weekly view — identifies key horizontal support and resistance zones from historical volume distribution",
+    "bull_market_band": "Weekly — 20-week SMA and 21-week EMA, shows macro trend structure"
+  },
 
-  "risk_rules": [
-    "Fixed trade size: 1% of portfolio per trade",
-    "Maximum trade size: $3.00",
-    "Maximum 6 trades per 60-second run",
-    "No stop loss — exit is time-based at next tick",
-    "For demo purposes only — minimum BitGet order size may apply"
-  ],
+  "risk_rules": [],
 
-  "notes": "Demo strategy for YouTube video. Runs 6 trades over 60 seconds, one every 10 seconds. Signal is simple price momentum on 1-min candles with RSI sanity check."
+  "risk_rules_note": "No automated risk rules currently. This system is for scanning and identifying setups only. All trading decisions and execution are manual. Risk rules will be added when automated trading is implemented.",
+
+  "notes": "TradingView username: MarketMind_X. Free plan — max 2 indicators visible at once. Always toggle indicators on/off as needed rather than adding new ones. Primary indicators are THT Volume Pro (main chart) and THT Multi Timeframe BX (lower pane). Bull Market Support Band available as third indicator via toggle workflow. Weekly chart is always the primary timeframe. BX Trender always reflects monthly values."
 }
