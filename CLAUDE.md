@@ -1,6 +1,6 @@
 # TradingView MCP — Claude Instructions
 
-68 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
+72 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222), and publishing weekly scans to Supabase.
 
 ## Decision Tree — Which Tool When
 
@@ -32,6 +32,15 @@ Use `study_filter` parameter to target a specific indicator by name substring (e
 5. `data_get_pine_tables` → session stats, analytics tables
 6. `data_get_ohlcv` with `summary: true` → price action summary
 7. `capture_screenshot` → visual confirmation
+
+### "Publish my weekly scan to the database"
+Persist a scan to Supabase so the portfolio app can read it (see `docs/DATABASE.md`).
+1. `db_health_check` → confirm credentials + tables are reachable (once per session)
+2. For each ticker in `rules.json` watchlist: read the chart (`data_get_study_values`, `data_get_pine_boxes --filter "Volume Pro"`, `quote_get`) honoring the 2-indicator free-plan cap, then `capture_screenshot`
+3. Interpret bias/rating from `rules.json` → `bias_criteria`
+4. `db_publish_scan` → upserts `signals` (latest), appends `signal_snapshots` (weekly history), archives `tradingview_scans` (raw), uploads the screenshot. Pass curated fields (`bx_trender`, `volume_profile`, `levels`, `quote`, `rules_flags`), `raw` blobs, and `screenshot_path`
+5. `db_publish_scans` → batch the whole watchlist in one call
+6. `db_get_recent_scans` → read back latest signals, or a ticker's history (`ticker` param)
 
 ### "Change the chart"
 - `chart_set_symbol` → switch ticker (e.g., "AAPL", "ES1!", "NYMEX:CL1!")
