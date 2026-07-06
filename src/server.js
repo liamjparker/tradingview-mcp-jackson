@@ -15,6 +15,7 @@ import { registerUiTools } from "./tools/ui.js";
 import { registerPaneTools } from "./tools/pane.js";
 import { registerTabTools } from "./tools/tab.js";
 import { registerMorningTools } from "./tools/morning.js";
+import { registerPublishTools } from "./tools/publish.js";
 
 const server = new McpServer(
   {
@@ -24,7 +25,7 @@ const server = new McpServer(
       "AI-assisted TradingView chart analysis and Pine Script development via Chrome DevTools Protocol",
   },
   {
-    instructions: `TradingView MCP — 78 tools for reading and controlling a live TradingView Desktop chart.
+    instructions: `TradingView MCP — 82 tools for reading and controlling a live TradingView Desktop chart.
 
 TOOL SELECTION GUIDE — use this to pick the right tool:
 
@@ -62,6 +63,13 @@ Launch: tv_launch → auto-detect and start TradingView with CDP on any platform
 Panes: pane_list, pane_set_layout (s, 2h, 2v, 4, 6, 8), pane_focus, pane_set_symbol
 Tabs: tab_list, tab_new, tab_close, tab_switch
 
+Publishing scans to the portfolio database (Supabase):
+- db_health_check → verify Supabase credentials + tables before publishing
+- db_publish_scan → write ONE ticker's weekly scan: upserts signals (latest), appends signal_snapshots (history), archives tradingview_scans (raw), uploads the screenshot
+- db_publish_scans → batch publish an array of scans
+- db_get_recent_scans → read back the latest signals, or a ticker's weekly history
+- Workflow per ticker: read the chart (study_values, pine_boxes for Volume Pro, BX value), capture_screenshot, interpret bias via rules.json, then db_publish_scan with curated fields + screenshot_path
+
 CONTEXT MANAGEMENT:
 - ALWAYS use summary=true on data_get_ohlcv
 - ALWAYS use study_filter on pine tools when you know which indicator you want
@@ -87,6 +95,7 @@ registerUiTools(server);
 registerPaneTools(server);
 registerTabTools(server);
 registerMorningTools(server);
+registerPublishTools(server);
 
 // Startup notice (stderr so it doesn't interfere with MCP stdio protocol)
 process.stderr.write(
